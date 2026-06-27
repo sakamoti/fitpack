@@ -315,12 +315,16 @@ module fitpack_sphere_domains
     !!
     !! @see bispev
     function sphere_eval_many(this,theta,phi,ierr) result(r)
-        class(fitpack_sphere), intent(inout)  :: this
+        class(fitpack_sphere), intent(in)     :: this
         real(FP_REAL), intent(in) :: theta(:),phi(:)  ! Evaluation points
         real(FP_REAL) :: r(size(phi),size(theta))
         integer, optional, intent(out) :: ierr ! Optional error flag
 
         integer :: ier
+        real(FP_REAL),    allocatable :: wrk2(:)   ! Local scratch (was this%wrk2): keeps evaluation read-only/thread-safe
+        integer(FP_SIZE), allocatable :: iwrk(:)   ! Local scratch (was this%iwrk)
+
+        allocate(wrk2(this%lwrk2), iwrk(this%liwrk))
 
         !  evaluation of the spline approximation.
         !  Assume cubic spline in both directions
@@ -334,8 +338,8 @@ module fitpack_sphere_domains
                     x=theta,mx=size(theta), &
                     y=phi,my=size(phi), &
                     z=r, &
-                    wrk=this%wrk2,lwrk=this%lwrk2, &
-                    iwrk=this%iwrk,kwrk=this%liwrk,ier=ier)
+                    wrk=wrk2,lwrk=this%lwrk2, &
+                    iwrk=iwrk,kwrk=this%liwrk,ier=ier)
 
         call fitpack_error_handling(ier,ierr,'evaluate sphere spline')
 
@@ -350,7 +354,7 @@ module fitpack_sphere_domains
     !!
     !! @see bispev
     real(FP_REAL) function sphere_eval_one(this,theta,phi,ierr) result(r)
-        class(fitpack_sphere), intent(inout)  :: this
+        class(fitpack_sphere), intent(in)     :: this
         real(FP_REAL),          intent(in)     :: theta,phi ! Evaluation point
         integer, optional,    intent(out)    :: ierr      ! Optional error flag
         real(FP_REAL) :: r1(1,1)

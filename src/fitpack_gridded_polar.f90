@@ -341,12 +341,16 @@ module fitpack_gridded_polar
     !!
     !! @see bispev
     function gridded_eval_many(this,u,v,ierr) result(f)
-        class(fitpack_grid_polar), intent(inout)  :: this
+        class(fitpack_grid_polar), intent(in)     :: this
         real(FP_REAL), intent(in) :: u(:),v(:)  ! Evaluation grid points (polar coordinates)
         real(FP_REAL) :: f(size(v),size(u))
         integer, optional, intent(out) :: ierr ! Optional error flag
 
         integer :: ier
+        real(FP_REAL),    allocatable :: wrk(:)    ! Local scratch (was this%wrk): keeps evaluation read-only/thread-safe
+        integer(FP_SIZE), allocatable :: iwrk(:)   ! Local scratch (was this%iwrk)
+
+        allocate(wrk(this%lwrk), iwrk(this%liwrk))
 
         !  evaluation of the spline approximation.
         !  Assume cubic spline in both directions
@@ -360,8 +364,8 @@ module fitpack_gridded_polar
                     x=u,mx=size(u), &
                     y=v,my=size(v), &
                     z=f, & ! output in format (j,i)
-                    wrk=this%wrk,lwrk=this%lwrk, &
-                    iwrk=this%iwrk,kwrk=this%liwrk,ier=ier)
+                    wrk=wrk,lwrk=this%lwrk, &
+                    iwrk=iwrk,kwrk=this%liwrk,ier=ier)
 
         call fitpack_error_handling(ier,ierr,'evaluate gridded surface')
 
@@ -371,7 +375,7 @@ module fitpack_gridded_polar
     !!
     !! @see bispev
     real(FP_REAL) function gridded_eval_one(this,u,v,ierr) result(f)
-        class(fitpack_grid_polar), intent(inout)  :: this
+        class(fitpack_grid_polar), intent(in)     :: this
         real(FP_REAL),          intent(in)      :: u,v ! Evaluation point (grid polar coordinates)
         integer, optional,    intent(out)     :: ierr      ! Optional error flag
         real(FP_REAL) :: f1(1,1)

@@ -248,7 +248,7 @@ module fitpack_parametric_surfaces
     !!
     !! @see surev
     function surf_eval_one(this,u,v,ierr) result(y)
-        class(fitpack_parametric_surface), intent(inout)  :: this
+        class(fitpack_parametric_surface), intent(in)     :: this
         real(FP_REAL),          intent(in)     :: u,v      ! Evaluation point
         integer, optional,    intent(out)    :: ierr     ! Optional error flag
         real(FP_REAL) :: y(this%idim)
@@ -275,12 +275,16 @@ module fitpack_parametric_surfaces
     !!
     !! @see surev
     function surf_eval_grid(this,u,v,ierr) result(f)
-        class(fitpack_parametric_surface), intent(inout)  :: this
+        class(fitpack_parametric_surface), intent(in)     :: this
         real(FP_REAL),          intent(in)     :: u(:),v(:) ! Evaluation grid (parameter range)
         integer, optional,    intent(out)    :: ierr      ! Optional error flag
         real(FP_REAL) :: f(size(v),size(u),this%idim)
 
         integer :: ier
+        real(FP_REAL),    allocatable :: wrk(:)    ! Local scratch (was this%wrk): keeps evaluation read-only/thread-safe
+        integer(FP_SIZE), allocatable :: iwrk(:)   ! Local scratch (was this%iwrk)
+
+        allocate(wrk(this%lwrk), iwrk(this%liwrk))
 
         call surev(idim=this%idim,                  &  ! dimension of the spline surface
                    tu=this%t(:,1),nu=this%knots(1), &  ! knots in the u-direction
@@ -289,8 +293,8 @@ module fitpack_parametric_surfaces
                    u=u,mu=size(u),                  &  ! u co-ordinates of the grid points along the u-axis.
                    v=v,mv=size(v),                  &  ! v co-ordinates of the grid points along the v-axis.
                    f=f,mf=size(f),                  &  ! Array of the results
-                   wrk=this%wrk,lwrk=this%lwrk,     &  ! workspace
-                   iwrk=this%iwrk,kwrk=this%liwrk,  &  ! workspace
+                   wrk=wrk,lwrk=this%lwrk,          &  ! workspace (local scratch)
+                   iwrk=iwrk,kwrk=this%liwrk,       &  ! workspace (local scratch)
                    ier=ier)
 
         call fitpack_error_handling(ier,ierr,'evaluate parametric surface')

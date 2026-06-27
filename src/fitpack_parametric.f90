@@ -643,13 +643,14 @@ module fitpack_parametric_curves
     !!
     !! @see cualde
     function curve_derivative(this, u, order, ierr) result(ddx)
-       class(fitpack_parametric_curve), intent(inout) :: this
+       class(fitpack_parametric_curve), intent(in)    :: this
        real(FP_REAL),          intent(in)    :: u      ! Evaluation points (parameter)
        integer,              intent(in)    :: order  ! Derivative order. 0=function; 1:k=i-th derivative
        integer, optional,    intent(out)   :: ierr   ! Optional error flag
        real(FP_REAL), dimension(this%idim)   :: ddx
 
        integer :: ddx_order,ierr0
+       real(FP_REAL) :: dd(this%idim,0:MAX_ORDER)   ! Local scratch (was this%dd): keeps evaluation read-only/thread-safe
 
        ! Choose order
        ddx_order = max(0,order)
@@ -667,12 +668,12 @@ module fitpack_parametric_curves
                    size(this%c), & ! Number of coefficients
                    this%order+1, & ! k1 = order of s(u) (order = degree+1)
                    u,            & ! Where the derivatives must be evaluated
-                   this%dd,      & ! Space for derivative evaluation
-                   size(this%dd),& ! Its size
+                   dd,           & ! Space for derivative evaluation (local scratch)
+                   size(dd),     & ! Its size
                    ierr0)          ! Output flag
 
        ! Derivative order is 0:k <- extract derivative
-       ddx = this%dd(:,ddx_order)
+       ddx = dd(:,ddx_order)
 
        call fitpack_error_handling(ierr0,ierr,'evaluate derivative')
 
@@ -687,12 +688,13 @@ module fitpack_parametric_curves
     !!
     !! @see cualde
     function curve_all_derivatives(this, u, ierr) result(ddx)
-       class(fitpack_parametric_curve), intent(inout) :: this
+       class(fitpack_parametric_curve), intent(in)    :: this
        real(FP_REAL),          intent(in)    :: u      ! Evaluation points (parameter)
        integer, optional,    intent(out)   :: ierr   ! Optional error flag
        real(FP_REAL), dimension(this%idim,0:this%order) :: ddx
 
        integer :: ierr0
+       real(FP_REAL) :: dd(this%idim,0:MAX_ORDER)   ! Local scratch (was this%dd): keeps evaluation read-only/thread-safe
 
        ierr0 = FITPACK_OK
 
@@ -707,12 +709,12 @@ module fitpack_parametric_curves
                    size(this%c), & ! Number of coefficients
                    this%order+1, & ! k1 = order of s(u) (order = degree+1)
                    u,            & ! Where the derivatives must be evaluated
-                   this%dd,      & ! Space for derivative evaluation
-                   size(this%dd),& ! Its size
+                   dd,           & ! Space for derivative evaluation (local scratch)
+                   size(dd),     & ! Its size
                    ierr0)          ! Output flag
 
        ! Derivative order is 0:k <- extract derivative
-       ddx = this%dd(:,0:this%order)
+       ddx = dd(:,0:this%order)
 
        call fitpack_error_handling(ierr0,ierr,'evaluate all derivatives')
 
@@ -759,7 +761,7 @@ module fitpack_parametric_curves
     !!
     !! @see cualde
     function curve_derivatives(this, u, order, ierr) result(ddx)
-       class(fitpack_parametric_curve), intent(inout)  :: this
+       class(fitpack_parametric_curve), intent(in)     :: this
        real(FP_REAL),          intent(in)     :: u(:)   ! Evaluation points (parameter)
        integer,              intent(in)     :: order  ! Derivative order. Default 1
        integer, optional,    intent(out)    :: ierr   ! Optional error flag
