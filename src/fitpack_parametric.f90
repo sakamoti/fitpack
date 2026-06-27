@@ -635,7 +635,7 @@ module fitpack_parametric_curves
 
     !> @brief Evaluate the k-th derivative of the parametric curve at a single parameter value.
     !!
-    !! @param[in,out] this   The fitted parametric curve.
+    !! @param[in]     this   The fitted parametric curve.
     !! @param[in]     u      Parameter value.
     !! @param[in]     order  Derivative order (\f$ 0 \leq \text{order} \leq k \f$).
     !! @param[out]    ierr   Optional error flag.
@@ -681,7 +681,7 @@ module fitpack_parametric_curves
 
     !> @brief Evaluate all derivatives \f$ \mathbf{s}^{(j)}(u) \f$ for \f$ j = 0, \ldots, k \f$.
     !!
-    !! @param[in,out] this  The fitted parametric curve.
+    !! @param[in]     this  The fitted parametric curve.
     !! @param[in]     u     Parameter value.
     !! @param[out]    ierr  Optional error flag.
     !! @return Array \f$ (d \times (k+1)) \f$ of derivatives at `u`.
@@ -753,7 +753,7 @@ module fitpack_parametric_curves
 
     !> @brief Evaluate the k-th derivative at multiple parameter values.
     !!
-    !! @param[in,out] this   The fitted parametric curve.
+    !! @param[in]     this   The fitted parametric curve.
     !! @param[in]     u      Array of parameter values.
     !! @param[in]     order  Derivative order.
     !! @param[out]    ierr   Optional error flag.

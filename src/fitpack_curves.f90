@@ -489,7 +489,7 @@ module fitpack_curves
 
     !> @brief Evaluate the k-th derivative at multiple points (with error flag).
     !!
-    !! @param[in,out] this   The fitted curve object.
+    !! @param[in]     this   The fitted curve object.
     !! @param[in]     x      Array of evaluation points.
     !! @param[in]     order  Derivative order (\f$ 0 \leq \text{order} \leq k \f$).
     !! @param[out]    ierr   Optional error flag.
@@ -535,7 +535,7 @@ module fitpack_curves
 
     !> @brief Evaluate all derivatives \f$ s^{(j)}(x) \f$ for \f$ j = 0, \ldots, k \f$ (with error flag).
     !!
-    !! @param[in,out] this  The fitted curve object.
+    !! @param[in]     this  The fitted curve object.
     !! @param[in]     x     Scalar evaluation point.
     !! @param[out]    ierr  Error flag.
     !! @return Array of size \f$ k+1 \f$ containing \f$ s(x), s'(x), \ldots, s^{(k)}(x) \f$.
@@ -597,7 +597,7 @@ module fitpack_curves
 
     !> @brief Evaluate the k-th derivative at a single point (with optional error flag).
     !!
-    !! @param[in,out] this   The fitted curve object.
+    !! @param[in]     this   The fitted curve object.
     !! @param[in]     x      Scalar evaluation point.
     !! @param[in]     order  Derivative order (\f$ 0 \leq \text{order} \leq k \f$).
     !! @param[out]    ierr   Optional error flag.
