@@ -497,7 +497,7 @@ module fitpack_curves
     !!
     !! @see splder
     function curve_derivatives(this, x, order, ierr) result(ddx)
-       class(fitpack_curve), intent(inout) :: this
+       class(fitpack_curve), intent(in)    :: this
        real(FP_REAL),        intent(in)    :: x(:)   ! Evaluation point (scalar)
        integer,              intent(in)    :: order  ! Derivative order. Default 1
        integer(FP_FLAG), optional, intent(out)   :: ierr  ! Optional error flag
@@ -505,6 +505,7 @@ module fitpack_curves
 
        integer(FP_SIZE) :: ddx_order,m
        integer(FP_FLAG) :: ierr0
+       real(FP_REAL) :: wrk(this%knots)   ! Local scratch (was this%wrk): keeps evaluation read-only/thread-safe
 
        ! Order 0 = spline value
        ddx_order = max(0,order)
@@ -524,7 +525,7 @@ module fitpack_curves
                    ddx,        & ! Evaluated derivatives
                    m,          & ! Number of input points
                    this%bc,    & ! Extrapolation behavior
-                   this%wrk,   & ! Temporary working space
+                   wrk,        & ! Temporary working space (local, length = knots)
                    ierr0)        ! Output flag
 
        1 call fitpack_error_handling(ierr0,ierr,'evaluate derivative')
@@ -541,7 +542,7 @@ module fitpack_curves
     !!
     !! @see spalde
     function curve_all_derivatives(this, x, ierr) result(ddx)
-       class(fitpack_curve), intent(inout) :: this
+       class(fitpack_curve), intent(in)    :: this
        real(FP_REAL),        intent(in)    :: x   ! Evaluation point (scalar)
        integer(FP_FLAG),     intent(out)   :: ierr  ! Optional error flag
        real(FP_REAL), dimension(this%order+1)  :: ddx
@@ -604,7 +605,7 @@ module fitpack_curves
     !!
     !! @see splder
     real(FP_REAL) function curve_derivative(this, x, order, ierr) result(ddx)
-       class(fitpack_curve), intent(inout) :: this
+       class(fitpack_curve), intent(in)    :: this
        real(FP_REAL),        intent(in)    :: x      ! Evaluation point (scalar)
        integer,              intent(in)    :: order  ! Derivative order. Default 1
        integer(FP_FLAG), optional, intent(out)   :: ierr   ! Optional error flag
@@ -619,15 +620,17 @@ module fitpack_curves
 
     !> @brief Compute the definite integral \f$ \int_a^b s(x)\,dx \f$ via splint.
     real(FP_REAL) function integral(this,from,to)
-       class(fitpack_curve), intent(inout) :: this
+       class(fitpack_curve), intent(in) :: this
        real(FP_REAL), intent(in) :: from,to
+
+       real(FP_REAL) :: wrk(this%knots)   ! Local scratch (was this%wrk): keeps integration read-only/thread-safe
 
        integral = splint(this%t, &  ! array of knots
                          this%knots, & ! number of knots
                          this%c    , & ! array of spline coefficients
                          this%order, & ! degree of the spline
                          from,to,    & ! endpoints of the integration interval
-                         this%wrk)     ! working space
+                         wrk)          ! working space (local, length = knots)
 
     end function integral
 
