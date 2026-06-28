@@ -83,10 +83,10 @@ class fpParametricCurve
         FP_FLAG interpolate(FP_SIZE order)            { return fitpack_parametric_curve_c_interpolating(&cptr,nullptr); }
 
         // Fit properties
-        FP_SIZE degree   () { return fitpack_parametric_curve_c_degree(&cptr); };
-        FP_REAL smoothing() { return fitpack_parametric_curve_c_smoothing(&cptr); };
-        FP_REAL mse      () { return fitpack_parametric_curve_c_mse(&cptr); };
-        FP_SIZE ndim     () { return fitpack_parametric_curve_c_idim(&cptr); };
+        FP_SIZE degree   () const { return fitpack_parametric_curve_c_degree(&cptr); };
+        FP_REAL smoothing() const { return fitpack_parametric_curve_c_smoothing(&cptr); };
+        FP_REAL mse      () const { return fitpack_parametric_curve_c_mse(&cptr); };
+        FP_SIZE ndim     () const { return fitpack_parametric_curve_c_idim(&cptr); };
         FP_REAL ubegin   () const { return fitpack_parametric_curve_c_ubegin(&cptr);} ;
         FP_REAL uend     () const { return fitpack_parametric_curve_c_uend(&cptr); };
         
@@ -96,7 +96,7 @@ class fpParametricCurve
         
 
         // Get value at u
-        fpPoint eval(FP_REAL u, FP_FLAG* ierr=nullptr)
+        fpPoint eval(FP_REAL u, FP_FLAG* ierr=nullptr) const
         {
             fpPoint y(fitpack_parametric_curve_c_idim(&cptr),0.0);
             FP_FLAG ierr0 = fitpack_parametric_curve_c_eval_one(&cptr, u, y.data());
@@ -105,7 +105,7 @@ class fpParametricCurve
         }
 
         // Get value at many u
-        vector<fpPoint> eval(vector<FP_REAL> u, FP_FLAG* ierr=nullptr)
+        vector<fpPoint> eval(vector<FP_REAL> u, FP_FLAG* ierr=nullptr) const
         {
             FP_FLAG ierr0 = FITPACK_OK;
             fpPoint y1(fitpack_parametric_curve_c_idim(&cptr),0.0);
@@ -124,7 +124,7 @@ class fpParametricCurve
         }
 
         // Get values at a range of parameter values
-        vector<fpPoint> eval(FP_REAL umin, FP_REAL umax, FP_SIZE npts = 100, FP_SIZE* ierr=nullptr)
+        vector<fpPoint> eval(FP_REAL umin, FP_REAL umax, FP_SIZE npts = 100, FP_SIZE* ierr=nullptr) const
         {
            vector<FP_REAL> uu(npts);
            
@@ -139,7 +139,7 @@ class fpParametricCurve
         }             
         
         // Get single derivative at u
-        fpPoint ddu(FP_REAL u, FP_SIZE order, FP_FLAG* ierr=nullptr)
+        fpPoint ddu(FP_REAL u, FP_SIZE order, FP_FLAG* ierr=nullptr) const
         {
             fpPoint dx(fitpack_parametric_curve_c_idim(&cptr),0.0);
             FP_FLAG ierr0 = fitpack_parametric_curve_c_derivative(&cptr,u,order,dx.data());
@@ -148,7 +148,7 @@ class fpParametricCurve
         }
 
         // Get all derivatives at u
-        vector<fpPoint> ddu_all(FP_REAL u, FP_FLAG* ierr=nullptr)
+        vector<fpPoint> ddu_all(FP_REAL u, FP_FLAG* ierr=nullptr) const
         {
            vector<fpPoint> deriv(degree()+1);
            FP_FLAG ierr0 = FITPACK_OK;
@@ -164,8 +164,12 @@ class fpParametricCurve
 
     private:
 
-        // Opaque C structure
-        fitpack_parametric_curve_c cptr = fitpack_parametric_curve_c_null;
+        // Opaque C structure.
+        // mutable: the Fortran C-API takes a non-const handle, but evaluation
+        //          routines (eval/ddu/getters) only read the fitted spline and
+        //          leave object state unchanged, so they are logically const
+        //          and thread-safe.
+        mutable fitpack_parametric_curve_c cptr = fitpack_parametric_curve_c_null;
 
 };
 

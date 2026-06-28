@@ -66,18 +66,18 @@ class fpPeriodicCurve
         FP_FLAG interpolate()                         { return fitpack_periodic_curve_c_interpolating(&cptr); }        
         
         // Fit properties
-        FP_SIZE degree   () { return fitpack_periodic_curve_c_degree(&cptr); };
-        FP_REAL smoothing() { return fitpack_periodic_curve_c_smoothing(&cptr); };
-        FP_REAL mse      () { return fitpack_periodic_curve_c_mse(&cptr); };
+        FP_SIZE degree   () const { return fitpack_periodic_curve_c_degree(&cptr); };
+        FP_REAL smoothing() const { return fitpack_periodic_curve_c_smoothing(&cptr); };
+        FP_REAL mse      () const { return fitpack_periodic_curve_c_mse(&cptr); };
 
         // Get value at x
-        FP_REAL eval(FP_REAL x, FP_SIZE* ierr=nullptr)
+        FP_REAL eval(FP_REAL x, FP_SIZE* ierr=nullptr) const
         {
             return fitpack_periodic_curve_c_eval_one(&cptr,x,ierr);
         }
 
         // Get values at a vector of x coordinates
-        vector<FP_REAL> eval(vector<FP_REAL> x, FP_SIZE* ierr=nullptr)
+        vector<FP_REAL> eval(vector<FP_REAL> x, FP_SIZE* ierr=nullptr) const
         {
            FP_SIZE npts = x.size();
            vector<FP_REAL> y;
@@ -87,13 +87,13 @@ class fpPeriodicCurve
         }
 
         // Get single derivative at x
-        FP_REAL ddx(FP_REAL x, FP_SIZE order, FP_SIZE* ierr=nullptr)
+        FP_REAL ddx(FP_REAL x, FP_SIZE order, FP_SIZE* ierr=nullptr) const
         {
             return fitpack_periodic_curve_c_derivative(&cptr,x,order,ierr);
         }
 
         // Get all derivatives at x
-        vector<FP_REAL> ddx(FP_REAL x, FP_SIZE* ierr=nullptr)
+        vector<FP_REAL> ddx(FP_REAL x, FP_SIZE* ierr=nullptr) const
         {
            vector<FP_REAL> deriv;
            deriv.resize(degree()+1);
@@ -103,12 +103,14 @@ class fpPeriodicCurve
         }
 
         // Get integral in range
-        FP_REAL integral(FP_REAL from, FP_REAL to)
+        FP_REAL integral(FP_REAL from, FP_REAL to) const
         {
            return fitpack_periodic_curve_c_integral(&cptr, from, to);
         }
 
         // Get fourier coefficients
+        // NOTE: not const — the Fortran path writes scratch into the curve's
+        //       internal wrk_fou buffer, so this mutates object state.
         FP_FLAG fourier(const vector<FP_REAL> &alpha,
                               vector<FP_REAL> &A, vector<FP_REAL> &B)
         {
@@ -125,8 +127,12 @@ class fpPeriodicCurve
 
     private:
 
-        // Opaque C structure
-        fitpack_periodic_curve_c cptr = fitpack_periodic_curve_c_null;
+        // Opaque C structure.
+        // mutable: the Fortran C-API takes a non-const handle, but evaluation
+        //          routines (eval/ddx/integral/getters) only read the fitted
+        //          spline and leave object state unchanged, so they are
+        //          logically const and thread-safe.
+        mutable fitpack_periodic_curve_c cptr = fitpack_periodic_curve_c_null;
 
 };
 

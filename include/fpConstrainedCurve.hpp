@@ -84,12 +84,12 @@ class fpConstrainedCurve
         FP_FLAG interpolate()                         { return fitpack_constrained_curve_c_interpolating(&cptr); }
 
         // Fit properties
-        FP_SIZE degree   () { return fitpack_constrained_curve_c_degree(&cptr); };
-        FP_REAL smoothing() { return fitpack_constrained_curve_c_smoothing(&cptr); };
-        FP_REAL mse      () { return fitpack_constrained_curve_c_mse(&cptr); };
-        FP_SIZE ndim     () { return fitpack_constrained_curve_c_idim(&cptr); };
-        FP_REAL ubegin   () { return fitpack_constrained_curve_c_ubegin(&cptr); };
-        FP_REAL uend     () { return fitpack_constrained_curve_c_uend(&cptr); };
+        FP_SIZE degree   () const { return fitpack_constrained_curve_c_degree(&cptr); };
+        FP_REAL smoothing() const { return fitpack_constrained_curve_c_smoothing(&cptr); };
+        FP_REAL mse      () const { return fitpack_constrained_curve_c_mse(&cptr); };
+        FP_SIZE ndim     () const { return fitpack_constrained_curve_c_idim(&cptr); };
+        FP_REAL ubegin   () const { return fitpack_constrained_curve_c_ubegin(&cptr); };
+        FP_REAL uend     () const { return fitpack_constrained_curve_c_uend(&cptr); };
 
         // Set constraints, begin point only
         FP_FLAG constrain_begin(vector<fpPoint> ddx_begin)
@@ -121,7 +121,7 @@ class fpConstrainedCurve
         void clean_constraints() { fitpack_constrained_curve_c_clean_constraints(&cptr); }
 
         // Get value at u
-        fpPoint eval(FP_REAL u, FP_FLAG* ierr=nullptr)
+        fpPoint eval(FP_REAL u, FP_FLAG* ierr=nullptr) const
         {
             fpPoint y(fitpack_constrained_curve_c_idim(&cptr),0.0);
             FP_FLAG ierr0 = fitpack_constrained_curve_c_eval_one(&cptr, u, y.data());
@@ -130,7 +130,7 @@ class fpConstrainedCurve
         }
 
         // Get value at many u
-        vector<fpPoint> eval(vector<FP_REAL> u, FP_FLAG* ierr=nullptr)
+        vector<fpPoint> eval(vector<FP_REAL> u, FP_FLAG* ierr=nullptr) const
         {
             FP_FLAG ierr0 = FITPACK_OK;
             fpPoint y1(fitpack_constrained_curve_c_idim(&cptr),0.0);
@@ -149,7 +149,7 @@ class fpConstrainedCurve
         }
 
         // Get single derivative at u
-        fpPoint ddu(FP_REAL u, FP_SIZE order, FP_FLAG* ierr=nullptr)
+        fpPoint ddu(FP_REAL u, FP_SIZE order, FP_FLAG* ierr=nullptr) const
         {
             fpPoint dx(fitpack_constrained_curve_c_idim(&cptr),0.0);
             FP_FLAG ierr0 = fitpack_constrained_curve_c_derivative(&cptr,u,order,dx.data());
@@ -158,7 +158,7 @@ class fpConstrainedCurve
         }
 
         // Get all derivatives at u
-        vector<fpPoint> ddu_all(FP_REAL u, FP_FLAG* ierr=nullptr)
+        vector<fpPoint> ddu_all(FP_REAL u, FP_FLAG* ierr=nullptr) const
         {
            vector<fpPoint> deriv(degree()+1);
            FP_FLAG ierr0 = FITPACK_OK;
@@ -174,8 +174,12 @@ class fpConstrainedCurve
 
     private:
 
-        // Opaque C structure
-        fitpack_constrained_curve_c cptr = fitpack_constrained_curve_c_null;
+        // Opaque C structure.
+        // mutable: the Fortran C-API takes a non-const handle, but evaluation
+        //          routines (eval/ddu/getters) only read the fitted spline and
+        //          leave object state unchanged, so they are logically const
+        //          and thread-safe.
+        mutable fitpack_constrained_curve_c cptr = fitpack_constrained_curve_c_null;
 
 };
 
