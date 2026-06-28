@@ -355,10 +355,14 @@ module fitpack_gridded_sphere
         integer, optional, intent(out) :: ierr ! Optional error flag
 
         integer :: ier
+        integer(FP_SIZE) :: lreq, kreq
         real(FP_REAL),    allocatable :: wrk(:)    ! Local scratch (was this%wrk): keeps evaluation read-only/thread-safe
         integer(FP_SIZE), allocatable :: iwrk(:)   ! Local scratch (was this%iwrk)
 
-        allocate(wrk(this%lwrk), iwrk(this%liwrk))
+        ! bispev workspace: lwrk >= (kx+1)*mx+(ky+1)*my, kwrk >= mx+my  (kx=ky=3)
+        lreq = 4*(size(u)+size(v))
+        kreq = size(u)+size(v)
+        allocate(wrk(lreq), iwrk(kreq))
 
         !  evaluation of the spline approximation.
         !  Assume cubic spline in both directions
@@ -372,8 +376,8 @@ module fitpack_gridded_sphere
                     x=u,mx=size(u), &
                     y=v,my=size(v), &
                     z=f, & ! output in format (j,i)
-                    wrk=wrk,lwrk=this%lwrk, &
-                    iwrk=iwrk,kwrk=this%liwrk,ier=ier)
+                    wrk=wrk,lwrk=lreq, &
+                    iwrk=iwrk,kwrk=kreq,ier=ier)
 
         call fitpack_error_handling(ier,ierr,'evaluate gridded surface')
 

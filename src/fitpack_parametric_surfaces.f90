@@ -281,10 +281,14 @@ module fitpack_parametric_surfaces
         real(FP_REAL) :: f(size(v),size(u),this%idim)
 
         integer :: ier
+        integer(FP_SIZE) :: lreq, kreq
         real(FP_REAL),    allocatable :: wrk(:)    ! Local scratch (was this%wrk): keeps evaluation read-only/thread-safe
         integer(FP_SIZE), allocatable :: iwrk(:)   ! Local scratch (was this%iwrk)
 
-        allocate(wrk(this%lwrk), iwrk(this%liwrk))
+        ! surev workspace: lwrk >= 4*(mu+mv), kwrk >= mu+mv
+        lreq = 4*(size(u)+size(v))
+        kreq = size(u)+size(v)
+        allocate(wrk(lreq), iwrk(kreq))
 
         call surev(idim=this%idim,                  &  ! dimension of the spline surface
                    tu=this%t(:,1),nu=this%knots(1), &  ! knots in the u-direction
@@ -293,8 +297,8 @@ module fitpack_parametric_surfaces
                    u=u,mu=size(u),                  &  ! u co-ordinates of the grid points along the u-axis.
                    v=v,mv=size(v),                  &  ! v co-ordinates of the grid points along the v-axis.
                    f=f,mf=size(f),                  &  ! Array of the results
-                   wrk=wrk,lwrk=this%lwrk,          &  ! workspace (local scratch)
-                   iwrk=iwrk,kwrk=this%liwrk,       &  ! workspace (local scratch)
+                   wrk=wrk,lwrk=lreq,               &  ! workspace (local scratch)
+                   iwrk=iwrk,kwrk=kreq,             &  ! workspace (local scratch)
                    ier=ier)
 
         call fitpack_error_handling(ier,ierr,'evaluate parametric surface')

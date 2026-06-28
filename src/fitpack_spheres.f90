@@ -321,10 +321,14 @@ module fitpack_sphere_domains
         integer, optional, intent(out) :: ierr ! Optional error flag
 
         integer :: ier
+        integer(FP_SIZE) :: lreq, kreq
         real(FP_REAL),    allocatable :: wrk2(:)   ! Local scratch (was this%wrk2): keeps evaluation read-only/thread-safe
         integer(FP_SIZE), allocatable :: iwrk(:)   ! Local scratch (was this%iwrk)
 
-        allocate(wrk2(this%lwrk2), iwrk(this%liwrk))
+        ! bispev workspace: lwrk >= (kx+1)*mx+(ky+1)*my, kwrk >= mx+my  (kx=ky=3)
+        lreq = 4*(size(theta)+size(phi))
+        kreq = size(theta)+size(phi)
+        allocate(wrk2(lreq), iwrk(kreq))
 
         !  evaluation of the spline approximation.
         !  Assume cubic spline in both directions
@@ -338,8 +342,8 @@ module fitpack_sphere_domains
                     x=theta,mx=size(theta), &
                     y=phi,my=size(phi), &
                     z=r, &
-                    wrk=wrk2,lwrk=this%lwrk2, &
-                    iwrk=iwrk,kwrk=this%liwrk,ier=ier)
+                    wrk=wrk2,lwrk=lreq, &
+                    iwrk=iwrk,kwrk=kreq,ier=ier)
 
         call fitpack_error_handling(ier,ierr,'evaluate sphere spline')
 
