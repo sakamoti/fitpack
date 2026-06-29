@@ -80,9 +80,6 @@ module fitpack_parametric_curves
         integer                  :: nest  = 0
         ! (lwrk/wrk inherited from fitpack_fitter)
 
-        ! Space for derivative evaluation
-        real(FP_REAL), allocatable :: dd(:,:)
-
         ! Knots
         integer     :: knots = 0
         real(FP_REAL), allocatable :: t(:)  ! Knot location
@@ -244,7 +241,6 @@ module fitpack_parametric_curves
        deallocate(this%u,stat=ierr)
        deallocate(this%w,stat=ierr)
        deallocate(this%sp,stat=ierr)
-       deallocate(this%dd,stat=ierr)
        deallocate(this%t,stat=ierr)
        this%ubegin = zero
        this%uend = zero
@@ -359,9 +355,6 @@ module fitpack_parametric_curves
         allocate(this%iwrk(nest),this%t(nest),this%c(nest*idim))
         allocate(this%wrk(lwrk),source=zero)
 
-        ! Setup space for derivative evaluatiuon
-        allocate(this%dd(idim,0:MAX_ORDER),source=zero)
-
         endassociate
 
     end subroutine new_points
@@ -445,7 +438,7 @@ module fitpack_parametric_curves
     !!
     !! @see curev
     function curve_eval_one(this,u,ierr) result(y)
-        class(fitpack_parametric_curve), intent(inout)  :: this
+        class(fitpack_parametric_curve), intent(in)     :: this
         real(FP_REAL),          intent(in)     :: u      ! Evaluation point
         integer, optional,    intent(out)    :: ierr   ! Optional error flag
         real(FP_REAL) :: y(this%idim)
@@ -466,7 +459,7 @@ module fitpack_parametric_curves
     !!
     !! @see curev
     function curve_eval_many(this,u,ierr) result(x)
-        class(fitpack_parametric_curve), intent(inout)  :: this
+        class(fitpack_parametric_curve), intent(in)     :: this
         real(FP_REAL),          intent(in)     :: u(:)   ! Evaluation points (parameter value)
         integer, optional,    intent(out)    :: ierr   ! Optional error flag
         real(FP_REAL) :: x(this%idim,size(u))
@@ -794,8 +787,7 @@ module fitpack_parametric_curves
                          + FP_COMM_SIZE(this%u) &
                          + FP_COMM_SIZE(this%sp) &
                          + FP_COMM_SIZE(this%w) &
-                         + FP_COMM_SIZE(this%t) &
-                         + FP_COMM_SIZE(this%dd)
+                         + FP_COMM_SIZE(this%t)
     end function parcur_comm_size
 
     !> @brief Pack parametric curve data into a communication buffer.
@@ -821,7 +813,6 @@ module fitpack_parametric_curves
         call FP_COMM_PACK(this%sp, buffer(pos:));  pos = pos + FP_COMM_SIZE(this%sp)
         call FP_COMM_PACK(this%w, buffer(pos:));   pos = pos + FP_COMM_SIZE(this%w)
         call FP_COMM_PACK(this%t, buffer(pos:));   pos = pos + FP_COMM_SIZE(this%t)
-        call FP_COMM_PACK(this%dd, buffer(pos:))
     end subroutine parcur_comm_pack
 
     !> @brief Expand parametric curve data from a communication buffer.
@@ -847,7 +838,6 @@ module fitpack_parametric_curves
         call FP_COMM_EXPAND(this%sp, buffer(pos:));  pos = pos + FP_COMM_SIZE(this%sp)
         call FP_COMM_EXPAND(this%w, buffer(pos:));   pos = pos + FP_COMM_SIZE(this%w)
         call FP_COMM_EXPAND(this%t, buffer(pos:));   pos = pos + FP_COMM_SIZE(this%t)
-        call FP_COMM_EXPAND(this%dd, buffer(pos:))
     end subroutine parcur_comm_expand
 
     ! =================================================================================================

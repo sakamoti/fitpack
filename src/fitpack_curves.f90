@@ -271,7 +271,7 @@ module fitpack_curves
     !!
     !! @see splev
     real(FP_REAL) function curve_eval_one(this,x,ierr) result(y)
-        class(fitpack_curve), intent(inout) :: this
+        class(fitpack_curve), intent(in)    :: this
         real(FP_REAL),        intent(in)    :: x      ! Evaluation point
         integer(FP_FLAG),     intent(out)   :: ierr   ! Optional error flag
 
@@ -302,7 +302,7 @@ module fitpack_curves
 
     !> @brief Evaluate the spline at multiple points (with error flag).
     function curve_eval_many(this,x,ierr) result(y)
-        class(fitpack_curve), intent(inout) :: this
+        class(fitpack_curve), intent(in)    :: this
         real(FP_REAL),        intent(in)    :: x(:)   ! Evaluation points
         integer(FP_FLAG),     intent(out)   :: ierr   ! Optional error flag
         real(FP_REAL) :: y(size(x))
