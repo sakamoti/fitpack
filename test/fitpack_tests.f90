@@ -1279,6 +1279,7 @@ module fitpack_tests
           real(FP_REAL) :: fac,facx,aint,exint,xb,xe,yb,ye
           integer(FP_SIZE) :: i,j,kx,kx1,ky,ky1,mx,my,m0,m1,m2,m3,nc,nkx1,nky1,nx,ny,useUnit
           real(FP_REAL) :: tx(15),ty(15),c(100),x(6),y(6),wrk(50)
+          real(FP_REAL) :: t2(15,2)
 
           success = .true.
           if (present(iunit)) then
@@ -1353,7 +1354,8 @@ module fitpack_tests
                       xe = x(j)
                       ye = xe
                       j = j-1
-                      aint  = dblint(tx,nx,ty,ny,c,kx,ky,xb,xe,yb,ye,wrk)
+                      t2(1:nx,1)=tx(1:nx); t2(1:ny,2)=ty(1:ny)
+                      aint  = dblint(2_FP_DIM,t2,[nx,ny],c,[kx,ky],[xb,yb],[xe,ye])
                       exint = (xe-xb)*(xe+xb)*(ye-yb)*(ye+yb)*0.25
                       write(useUnit,970) xb,xe,yb,ye,aint,exint
 
@@ -1914,6 +1916,7 @@ module fitpack_tests
           integer(FP_FLAG) :: ier
           real(FP_REAL) :: tx(15),ty(15),c(100),x(mx),y(my),z(mx*my),wrk(200)
           integer(FP_SIZE) :: iwrk(20)
+          real(FP_REAL) :: t2(15,2),xg2(mx,2)
 
           ! Initialization.
           success = .true.
@@ -1980,8 +1983,11 @@ module fitpack_tests
                       nux = ix-1
                       do iy=1,2
                           nuy = iy-1
-                          !  evaluation of the spline derivative
-                          call parder(tx,nx,ty,ny,c,kx,ky,nux,nuy,x,mx,y,my,z,wrk,200,iwrk,20,ier)
+                          !  evaluation of the spline derivative (dimension-generic parder, dims=2)
+                          t2(1:nx,1)=tx(1:nx); t2(1:ny,2)=ty(1:ny)
+                          xg2(1:mx,1)=x;       xg2(1:my,2)=y
+                          call parder(2_FP_DIM,t2,[nx,ny],c,[kx,ky],[nux,nuy],xg2,[mx,my],z, &
+                                      wrk,size(wrk,kind=FP_SIZE),iwrk,size(iwrk,kind=FP_SIZE),ier)
 
                           if (.not.FITPACK_SUCCESS(ier)) then
                               success = .false.
@@ -3010,6 +3016,7 @@ module fitpack_tests
           integer(FP_SIZE) :: i,iopt,j,kx,kx1,ky,ky1,m0,m1,m2,m3,nc,nkx1,nky1,nx,ny,useUnit
           integer(FP_FLAG) :: ier
           real(FP_REAL) :: tx(15),ty(15),c(100),x(mx),y(my),z(m),cc(15)
+          real(FP_REAL) :: t2(15,2)
 
           ! Initialization.
           success = .true.
@@ -3079,7 +3086,8 @@ module fitpack_tests
                   y_profiles: do i=1,mx
 
                       u = x(i)
-                      call profil(iopt,tx,nx,ty,ny,c,kx,ky,u,15,cc,ier)
+                      t2(1:nx,1)=tx(1:nx); t2(1:ny,2)=ty(1:ny)
+                      call profil(1_FP_DIM,2_FP_DIM,t2,[nx,ny],c,[kx,ky],u,cc,ier)
 
                       if (.not.FITPACK_SUCCESS(ier)) then
                           write(useUnit,1000)'y',kx,ky,i,FITPACK_MESSAGE(ier)
@@ -3111,7 +3119,8 @@ module fitpack_tests
                   x_profiles: do i=1,my
 
                       u = y(i)
-                      call profil(iopt,tx,nx,ty,ny,c,kx,ky,u,15,cc,ier)
+                      t2(1:nx,1)=tx(1:nx); t2(1:ny,2)=ty(1:ny)
+                      call profil(2_FP_DIM,2_FP_DIM,t2,[nx,ny],c,[kx,ky],u,cc,ier)
 
                       if (.not.FITPACK_SUCCESS(ier)) then
                           write(useUnit,1000)'x',kx,ky,i,FITPACK_MESSAGE(ier)
@@ -3162,17 +3171,20 @@ module fitpack_tests
           real(FP_REAL), intent(in) :: x(:),y(:),z(size(x)*size(y))
           integer, optional, intent(in) :: iunit
 
-          !  we set up the dimension information
+          !  we set up the dimension information (wrk/iwrk sized for regrid at dims=2)
           integer(FP_SIZE), parameter :: nxest = 17
           integer(FP_SIZE), parameter :: nyest = 17
-          integer(FP_SIZE), parameter :: lwrk = 850
-          integer(FP_SIZE), parameter :: kwrk = 60
+          integer(FP_SIZE), parameter :: lwrk = 2000
+          integer(FP_SIZE), parameter :: kwrk = 200
 
           real(FP_REAL) :: tx(nxest),ty(nyest),c(300),wrk(lwrk),f(121), wk(132)
           integer(FP_SIZE) :: iwrk(kwrk),iw(22)
           real(FP_REAL) :: fp,s,xb,xe,yb,ye
           integer(FP_SIZE) :: kx,ky,m,mx,my,m1,m2,nc,nx,ny,i,is,iopt,j,useUnit
           integer(FP_FLAG) :: ier
+          !  dims=2 marshalling for the N-D gridded engine regrid
+          real(FP_REAL)    :: lo(2),hi(2),t2(nxest,2),xg(max(size(x),size(y)),2)
+          integer(FP_SIZE) :: mdim(2),n2(2),k2(2),nest2(2)
 
           ! Initialization.
           success = .true.
@@ -3213,6 +3225,12 @@ module fitpack_tests
           yb = y(1)
           xe = x(mx)
           ye = y(my)
+
+          !  marshalling for regrid(dims=2): per-axis sizes, coords, range. t2/n2 persist across the
+          !  iopt=0->1 continuation chain (regrid updates them in place, as legacy regrid did tx/ty).
+          mdim = [mx,my]; nest2 = [nxest,nyest]; lo = [xb,yb]; hi = [xe,ye]
+          xg = zero; xg(1:mx,1) = x; xg(1:my,2) = y
+          t2 = zero; n2 = 0; wrk = zero; iwrk = 0
 
           !  main loop for the different spline approximations
           approximations: do is=1,6
@@ -3266,9 +3284,20 @@ module fitpack_tests
 
               end select
 
-              !  determination of the spline approximation.
-              call regrid(iopt,mx,x,my,y,z,xb,xe,yb,ye,kx,ky,s,nxest,nyest,nx,tx,ny,ty,c,fp,&
-                          wrk,lwrk,iwrk,kwrk,ier)
+              !  determination of the spline approximation via the dims=2 N-D engine.
+              k2 = [kx,ky]
+              if (iopt<0) then
+                 !  least-squares on prescribed knots: seed the interior knots and per-axis counts
+                 n2 = [nx,ny]
+                 t2 = zero
+                 t2(kx+2:nx-kx-1,1) = tx(kx+2:nx-kx-1)
+                 t2(ky+2:ny-ky-1,2) = ty(ky+2:ny-ky-1)
+              end if
+              call regrid(iopt,2_FP_DIM,mdim,xg,z,lo,hi,k2,s,nest2, &
+                             n2,t2,c,fp,wrk,lwrk,iwrk,kwrk,ier)
+              nx = n2(1); ny = n2(2)
+              tx = zero; tx(1:nx) = t2(1:nx,1)
+              ty = zero; ty(1:ny) = t2(1:ny,2)
 
               if (.not.FITPACK_SUCCESS(ier)) then
                   success = .false.
